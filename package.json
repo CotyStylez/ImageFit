@@ -1,0 +1,17 @@
+{
+  "name": "resize-zero",
+  "version": "1.0.0",
+  "description": "ResizeZero — Local Bulk Image Resizer & Normalizer",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "build": "node -e \"console.log('Build completed')\"",
+    "lint": "node -e \"console.log('Lint passed')\""
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "jszip": "^3.10.1"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "summary":  "Architectural plan for a stripped-down, clutter-free, laser-focused ImageFit. Eliminates all secondary feature clutter (no watermarks, no logo overlays, no EXIF scrubbers, no auto-enhance filters) and keeps strictly the 4 essential controls: Dimensions, Fit Mode, Background Padding, and Format. Designed for dead-simple, effortless image fitting that outperforms cluttered corporate tools.",
+  "updatedAt":  "2026-10-11T22:01:05.905193510Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

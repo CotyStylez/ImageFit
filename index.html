@@ -3,176 +3,2401 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ResizeZero — Local Bulk Image Resizer & Normalizer</title>
+    <title>ImageFit — Pure Bulk Image Resizer & Normalizer</title>
+    <meta name="description" content="ImageFit — Free, standalone local bulk image resizer and aspect-ratio normalizer. 100% in-browser with zero uploads.">
+    <meta property="og:title" content="ImageFit — Pure Bulk Image Resizer & Normalizer">
+    <meta property="og:description" content="Free, standalone local bulk image resizer and aspect-ratio normalizer. 100% in-browser with zero uploads.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-primary: #090a0f;
-            --bg-secondary: #13151f;
-            --bg-tertiary: #1c2030;
-            --accent: #7c3aed;
-            --accent-hover: #6d28d9;
-            --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
-            --border: #2d3748;
+            --bg-canvas: #090a0f;
+            --bg-panel: #111420;
+            --bg-card: #171b2c;
+            --bg-subtle: #1f253d;
+            --bg-input: #0c0e17;
+            --border: #262c45;
+            --border-hover: #3e476d;
+            --border-focus: #6366f1;
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --accent-glow: rgba(99, 102, 241, 0.25);
+            --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --text-main: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #8b95a5;
             --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.15);
+            --danger: #ef4444;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
         }
 
         body {
-            background-color: var(--bg-primary);
+            background-color: var(--bg-canvas);
             color: var(--text-main);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            overflow-x: hidden;
         }
 
+        .tabular-nums {
+            font-family: 'JetBrains Mono', monospace;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Top Bar */
         header {
-            background-color: var(--bg-secondary);
+            background-color: var(--bg-panel);
             border-bottom: 1px solid var(--border);
-            padding: 1rem 2rem;
+            padding: 0.85rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand-zone {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .brand-icon {
+            background: var(--accent-gradient);
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }
+
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .brand-subtitle {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            letter-spacing: 0.02em;
+        }
+
+        /* Top Bar Middle Trust Zone - Unboxed Clean Typography */
+        .trust-zone {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .trust-zone span.highlight {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+        }
+
+        .nav-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 0.5rem 0.85rem;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            text-decoration: none;
+        }
+
+        .nav-btn:hover {
+            border-color: var(--accent);
+            color: var(--text-main);
+            background: var(--bg-subtle);
+        }
+
+        /* Main Workspace Grid */
+        main {
+            flex: 1;
+            max-width: 1540px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 1.5rem 2rem;
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 1.75rem;
+            align-items: start;
+        }
+
+        @media (max-width: 1040px) {
+            main {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+            header {
+                padding: 0.75rem 1rem;
+            }
+            .trust-zone {
+                display: none;
+            }
+        }
+
+        /* Clean Sidebar Sizing Panel */
+        .sidebar-panel {
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: sticky;
+            top: 4.8rem;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+        }
+
+        .sidebar-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .sidebar-title {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .sidebar-content {
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        /* Control Group */
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .control-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .control-label .val-tag {
+            color: var(--accent);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+        }
+
+        .help-text {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            line-height: 1.35;
+        }
+
+        input[type="number"],
+        input[type="text"],
+        select {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            padding: 0.6rem 0.75rem;
+            color: var(--text-main);
+            font-size: 0.84rem;
+            outline: none;
+            width: 100%;
+            transition: all 0.2s;
+        }
+
+        input[type="number"]:focus,
+        input[type="text"]:focus,
+        select:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 2px var(--accent-glow);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.65rem;
+            align-items: flex-end;
+        }
+
+        .range-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            accent-color: var(--accent);
+            cursor: pointer;
+            height: 5px;
+            background: var(--bg-subtle);
+            border-radius: 3px;
+        }
+
+        /* Color Picker Chips */
+        .color-chips-bar {
+            display: flex;
+            gap: 0.45rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .color-chip {
+            width: 26px;
+            height: 26px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.15s;
+            position: relative;
+        }
+
+        .color-chip:hover, .color-chip.active {
+            transform: scale(1.15);
+            border-color: var(--accent);
+            box-shadow: 0 0 6px var(--accent-glow);
+        }
+
+        .color-chip.transparent-grid {
+            background: repeating-conic-gradient(#252a3d 0% 25%, #181b28 0% 50%) 50% / 8px 8px;
+        }
+
+        /* Action Buttons */
+        .sidebar-actions {
+            padding: 1.1rem 1.25rem;
+            border-top: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+        }
+
+        .btn-full {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .btn-primary-action {
+            background: var(--accent-gradient);
+            color: white;
+            box-shadow: 0 4px 14px var(--accent-glow);
+        }
+
+        .btn-primary-action:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-success-action {
+            background: #059669;
+            color: white;
+        }
+
+        .btn-success-action:hover:not(:disabled) {
+            background: #047857;
+            transform: translateY(-1px);
+        }
+
+        .btn-full:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Workspace Right Column */
+        .workspace {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        /* Dropzone Deck */
+        .dropdeck {
+            background: var(--bg-panel);
+            border: 2px dashed var(--border);
+            border-radius: 14px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.85rem;
+        }
+
+        .dropdeck:hover, .dropdeck.dragover {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, 0.04);
+            box-shadow: 0 0 24px rgba(99, 102, 241, 0.1);
+        }
+
+        .dropdeck-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent);
+            margin-bottom: 0.25rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .dropdeck h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+
+        .dropdeck p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            max-width: 500px;
+            line-height: 1.5;
+        }
+
+        .deck-buttons {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 0.4rem;
+        }
+
+        .pill-button {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            padding: 0.45rem 0.9rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-weight: 600;
+        }
+
+        .pill-button:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--bg-subtle);
+        }
+
+        /* Progress Box */
+        .progress-indicator-box {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+            display: none;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .progress-indicator-box.active {
+            display: flex;
+        }
+
+        .progress-meta-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
+        .progress-rail {
+            height: 7px;
+            background: var(--bg-input);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-gradient);
+            width: 0%;
+            transition: width 0.15s ease-out;
+        }
+
+        /* Metrics Strip */
+        .metrics-strip {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.85rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1.25rem;
+        }
+
+        .metric-group {
+            display: flex;
+            gap: 1.75rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .metric-cell {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .metric-name {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .metric-data {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .metric-data.green {
+            color: var(--success);
+        }
+
+        .view-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .view-toggle-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 0.4rem 0.65rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            transition: all 0.2s;
+        }
+
+        .view-toggle-btn.active {
+            background: var(--bg-subtle);
+            border-color: var(--accent);
+            color: var(--text-main);
+        }
+
+        /* Items Container (Cards vs Table) */
+        .queue-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .queue-container.grid-view {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1rem;
+        }
+
+        /* Empty State */
+        .zero-state {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 3.5rem 1.5rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .zero-state svg {
+            color: var(--border-hover);
+        }
+
+        /* Queue Card */
+        .batch-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.85rem 1rem;
+            display: grid;
+            grid-template-columns: 80px 1fr auto;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.2s;
+        }
+
+        .batch-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .queue-container.grid-view .batch-card {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+            padding: 1rem;
+        }
+
+        .preview-frame {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .queue-container.grid-view .preview-frame {
+            width: 100%;
+            height: 160px;
+        }
+
+        .preview-img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .item-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            min-width: 0;
+        }
+
+        .item-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-main);
+        }
+
+        .item-meta-line {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.76rem;
+            color: var(--text-muted);
+            flex-wrap: wrap;
+        }
+
+        .meta-arrow {
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        .savings-tag {
+            color: var(--success);
+            font-weight: 700;
+            background: var(--success-glow);
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            font-size: 0.72rem;
+        }
+
+        .status-pill {
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 0.2rem 0.55rem;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            width: fit-content;
+        }
+
+        .status-pill.queued {
+            background: var(--bg-card);
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+        }
+
+        .status-pill.processing {
+            background: rgba(99, 102, 241, 0.15);
+            color: #a5b4fc;
+            border: 1px solid rgba(99, 102, 241, 0.4);
+        }
+
+        .status-pill.ready {
+            background: var(--success-glow);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-pill.failed {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .action-icon-group {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        .action-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            width: 34px;
+            height: 34px;
+            border-radius: 7px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover:not(:disabled) {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .action-btn.trash:hover:not(:disabled) {
+            background: var(--danger);
+            border-color: var(--danger);
+            color: white;
+        }
+
+        .action-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        /* Slide-Over Comprehensive Handbook */
+        .drawer-scrim {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(4px);
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .drawer-scrim.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .handbook-drawer {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 520px;
+            max-width: 92vw;
+            background: var(--bg-panel);
+            border-left: 1px solid var(--border);
+            z-index: 210;
+            display: flex;
+            flex-direction: column;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .handbook-drawer.open {
+            transform: translateX(0);
+        }
+
+        .handbook-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .handbook-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .handbook-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .guide-article {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.15rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+        }
+
+        .guide-article h4 {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .guide-article p {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.55;
+        }
+
+        .guide-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.78rem;
+            margin-top: 0.35rem;
+        }
+
+        .guide-table th {
+            text-align: left;
+            padding: 0.45rem 0.5rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .guide-table td {
+            padding: 0.45rem 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            color: var(--text-secondary);
+        }
+
+        /* Split Slider Compare Modal */
+        .modal-shade {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(5px);
+            z-index: 300;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .modal-shade.active {
+            display: flex;
+        }
+
+        .modal-window {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            max-width: 960px;
+            width: 100%;
+            max-height: 92vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 24px 48px rgba(0,0,0,0.7);
+        }
+
+        .modal-bar {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-viewport {
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        /* Before/After Split Viewer */
+        .split-slider-container {
+            position: relative;
+            width: 100%;
+            height: 420px;
+            background: repeating-conic-gradient(#1e2438 0% 25%, #131724 0% 50%) 50% / 16px 16px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            user-select: none;
+        }
+
+        .slider-image-layer {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slider-image-layer img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        .slider-after-layer {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            clip-path: inset(0 50% 0 0);
+            pointer-events: none;
+        }
+
+        .slider-after-layer img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        .split-divider-line {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 2px;
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.8);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .slider-handle-tag {
+            position: absolute;
+            top: 12px;
+            padding: 0.3rem 0.65rem;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            pointer-events: none;
+        }
+
+        .slider-handle-tag.orig {
+            right: 12px;
+        }
+
+        .slider-handle-tag.new {
+            left: 12px;
+        }
+
+        .split-range-input {
+            width: 100%;
+            accent-color: var(--accent);
+            cursor: ew-resize;
+        }
+
+        .compare-stats-card {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+        }
+
+        .compare-side {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .compare-side h5 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+
+        .compare-detail {
+            font-size: 0.85rem;
+            color: var(--text-main);
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 1.25rem 2rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
             gap: 1rem;
+            background: var(--bg-panel);
         }
 
-        .logo-area {
+        .footer-links {
             display: flex;
-            align-items: center;
-            gap: 0.75rem;
+            gap: 1.5rem;
         }
 
-        .logo-icon {
-            background: var(--accent);
-            color: white;
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-        }
-
-        h1 {
-            font-size: 1.25rem;
-            font-weight: 600;
-        }
-
-        .badges {
-            display: flex;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-        }
-
-        .badge {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            padding: 0.35rem 0.75rem;
-            border-radius: 999px;
-            font-size: 0.75rem;
+        .footer-link {
             color: var(--text-muted);
-            display: flex;
-            align-items: center;
-            gap: 0.35rem;
-        }
-
-        .badge.active {
-            color: var(--success);
-            border-color: rgba(16, 185, 129, 0.3);
-        }
-
-        .donate-btn {
-            background: var(--bg-tertiary);
-            color: var(--text-main);
-            border: 1px solid var(--border);
-            padding: 0.4rem 0.85rem;
-            border-radius: 6px;
             text-decoration: none;
-            font-size: 0.85rem;
-            font-weight: 500;
-            transition: all 0.2s;
+            cursor: pointer;
+            transition: color 0.2s;
         }
 
-        .donate-btn:hover {
-            background: var(--accent);
-            border-color: var(--accent);
+        .footer-link:hover {
+            color: var(--text-main);
+        }
+    </style>
+    <!-- JSZip bundled local route with CDN fallback -->
+    <script src="/vendor/jszip.min.js"></script>
+    <script>
+        if (typeof JSZip === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+            document.head.appendChild(script);
+        }
+    </script>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <a href="#" class="brand-zone">
+            <div class="brand-icon">IF</div>
+            <div class="brand-text">
+                <span class="brand-title">ImageFit</span>
+                <span class="brand-subtitle">Bulk Image Resizer & Normalizer</span>
+            </div>
+        </a>
+
+        <!-- Middle Trust Zone (Anti-slop clean text) -->
+        <div class="trust-zone">
+            <span>In-Browser Processing</span>
+            <span>·</span>
+            <span class="highlight">Zero Cloud Uploads</span>
+            <span>·</span>
+            <span>100% Free Forever</span>
+        </div>
+
+        <div class="top-actions">
+            <button type="button" class="nav-btn" id="openSupportBtn" style="border-color: rgba(16, 185, 129, 0.4); color: #10b981; background: rgba(16, 185, 129, 0.08);" title="Support with Cash App: $static9072">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                Support ($static9072)
+            </button>
+            <button type="button" class="nav-btn" id="openHandbookBtn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                Resizing Guide
+            </button>
+            <button type="button" class="nav-btn" id="loadDemoBtn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                Load Demo Samples
+            </button>
+            <button type="button" class="nav-btn" id="headerClearBtn" style="display: none;">
+                Clear Queue
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <!-- Pure Minimal Sidebar Sizing Controls -->
+        <aside class="sidebar-panel">
+            <div class="sidebar-header">
+                <span class="sidebar-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                    Sizing Controls
+                </span>
+                <span class="tabular-nums" style="font-size: 0.78rem; color: var(--text-muted);" id="queueCountBadge">0 images</span>
+            </div>
+
+            <div class="sidebar-content">
+                <!-- 1. Dimensions & Preset -->
+                <div class="control-group">
+                    <label class="control-label" for="sizePreset">Dimensions Preset</label>
+                    <select id="sizePreset">
+                        <option value="custom">Custom Dimensions</option>
+                        <option value="1080x1080" selected>Instagram / Square Feed (1080 × 1080)</option>
+                        <option value="1000x1000">Shopify / Etsy / Amazon Product (1000 × 1000)</option>
+                        <option value="1080x1920">Story / Reel / TikTok (1080 × 1920)</option>
+                        <option value="1920x1080">Full HD Website Banner (1920 × 1080)</option>
+                        <option value="1280x720">YouTube Thumbnail (1280 × 720)</option>
+                        <option value="1200x675">Social Post (1200 × 675)</option>
+                        <option value="512x512">Avatar / App Icon (512 × 512)</option>
+                        <option value="3840x2160">4K Ultra HD (3840 × 2160)</option>
+                    </select>
+                </div>
+
+                <!-- Dimensions Inputs with Aspect Ratio Lock -->
+                <div class="control-group" id="dimsRow">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.15rem;">
+                        <span style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);">Exact Resolution</span>
+                        <button type="button" id="aspectRatioLockBtn" title="Lock aspect ratio while adjusting size" style="background: var(--bg-card); border: 1px solid var(--accent); color: var(--accent); padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.72rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 600; transition: all 0.15s;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="lockIcon"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                            <span id="lockText">Locked (1:1)</span>
+                        </button>
+                    </div>
+                    <div class="grid-2">
+                        <div class="control-group">
+                            <label class="control-label" for="inputWidth">Width (px)</label>
+                            <input type="number" id="inputWidth" value="1080" min="16" max="10000">
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label" for="inputHeight">Height (px)</label>
+                            <input type="number" id="inputHeight" value="1080" min="16" max="10000">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Fit Mode -->
+                <div class="control-group">
+                    <label class="control-label" for="fitMode">How to Fit Images</label>
+                    <select id="fitMode">
+                        <option value="contain" selected>Fit inside (Adds clean borders, no cropping)</option>
+                        <option value="cover">Fill entire frame (Crops edges to fill box)</option>
+                        <option value="exact">Stretch to exact size (Forces width & height)</option>
+                        <option value="scale">Scale by percentage (%)</option>
+                        <option value="longest">Limit longest edge (Preserves natural shape)</option>
+                        <option value="width">Set width only (Auto-calculates height)</option>
+                        <option value="height">Set height only (Auto-calculates width)</option>
+                    </select>
+                    <span class="help-text" id="fitExplanation">Adds clean borders to non-square photos so your subject is completely preserved without awkward cuts.</span>
+                </div>
+
+                <!-- Percentage Scale Factor (Conditional) -->
+                <div class="control-group" id="scaleGroup" style="display: none;">
+                    <label class="control-label">
+                        <span>Scale Factor</span>
+                        <span class="val-tag" id="scaleValTag">50%</span>
+                    </label>
+                    <div class="range-wrapper">
+                        <input type="range" id="inputScale" min="10" max="200" step="5" value="50">
+                    </div>
+                </div>
+
+                <!-- Longest Edge (Conditional) -->
+                <div class="control-group" id="longestGroup" style="display: none;">
+                    <label class="control-label" for="inputLongest">Max Edge Length (px)</label>
+                    <input type="number" id="inputLongest" value="1200" min="32" max="10000">
+                </div>
+
+                <!-- 3. Background Border Color -->
+                <div class="control-group" id="borderBgGroup">
+                    <label class="control-label">Background Padding Color</label>
+                    <div class="color-chips-bar">
+                        <button type="button" class="color-chip active" style="background: #ffffff;" data-color="#ffffff" title="Clean White"></button>
+                        <button type="button" class="color-chip transparent-grid" data-color="transparent" title="Transparent (PNG/WebP)"></button>
+                        <button type="button" class="color-chip" style="background: #090a0f;" data-color="#090a0f" title="Dark Slate"></button>
+                        <button type="button" class="color-chip" style="background: #000000;" data-color="#000000" title="Pure Black"></button>
+                        <button type="button" class="color-chip" style="background: #f1f5f9;" data-color="#f1f5f9" title="Soft Light Gray"></button>
+                        <input type="color" id="customColorInput" value="#ffffff" title="Custom color" style="width: 28px; height: 26px; border: none; background: none; cursor: pointer;">
+                    </div>
+                    <span class="help-text">Color that fills the empty space around the image when "Fit inside" is chosen.</span>
+                </div>
+
+                <!-- 4. Format & Quality -->
+                <div class="control-group">
+                    <label class="control-label" for="outputFormatSelect">Save As Format</label>
+                    <select id="outputFormatSelect">
+                        <option value="image/webp" selected>WebP — Recommended (Up to 80% smaller, ultra-crisp)</option>
+                        <option value="image/jpeg">JPEG — Universal (Great for camera photos)</option>
+                        <option value="image/png">PNG — Lossless (Keeps transparency)</option>
+                        <option value="original">Keep Original File Format</option>
+                    </select>
+                </div>
+
+                <div class="control-group" id="qualityWrapper">
+                    <label class="control-label">
+                        <span>Quality</span>
+                        <span class="val-tag" id="qualityValTag">85%</span>
+                    </label>
+                    <div class="range-wrapper">
+                        <input type="range" id="inputQuality" min="10" max="100" step="5" value="85">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label" for="fileSuffixInput">Filename Suffix</label>
+                    <input type="text" id="fileSuffixInput" value="-resized" placeholder="-resized">
+                </div>
+            </div>
+
+            <!-- Execution Buttons -->
+            <div class="sidebar-actions">
+                <button type="button" id="startBatchBtn" class="btn-full btn-primary-action" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    Process All Images
+                </button>
+                <button type="button" id="zipDownloadBtn" class="btn-full btn-success-action" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Download All as ZIP
+                </button>
+            </div>
+        </aside>
+
+        <!-- Right Main Workspace -->
+        <section class="workspace">
+            <!-- Intake Deck -->
+            <div class="dropdeck" id="dropdeck">
+                <input type="file" id="bulkFileInput" multiple accept="image/*" style="display: none;">
+                <div class="dropdeck-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                </div>
+                <h3>Drop your images here</h3>
+                <p>Drag & drop single photos or whole folder batches. Fast in-browser resizing with zero cloud uploads.</p>
+                <div class="deck-buttons">
+                    <button type="button" class="pill-button" id="deckBrowseBtn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        Browse Files
+                    </button>
+                    <button type="button" class="pill-button" id="deckSampleBtn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+                        Try with Demo Samples
+                    </button>
+                </div>
+            </div>
+
+            <!-- Progress Box -->
+            <div class="progress-indicator-box" id="progressBox">
+                <div class="progress-meta-row">
+                    <span id="progressStatusLabel">Processing batch...</span>
+                    <span class="tabular-nums" id="progressPercentLabel">0%</span>
+                </div>
+                <div class="progress-rail">
+                    <div class="progress-fill" id="progressBarFill"></div>
+                </div>
+            </div>
+
+            <!-- Metrics Strip -->
+            <div class="metrics-strip" id="metricsStrip" style="display: none;">
+                <div class="metric-group">
+                    <div class="metric-cell">
+                        <span class="metric-name">Images</span>
+                        <span class="metric-data tabular-nums" id="metricTotalCount">0</span>
+                    </div>
+                    <div class="metric-cell">
+                        <span class="metric-name">Completed</span>
+                        <span class="metric-data tabular-nums" id="metricReadyCount">0</span>
+                    </div>
+                    <div class="metric-cell">
+                        <span class="metric-name">Original Size</span>
+                        <span class="metric-data tabular-nums" id="metricOrigTotal">0 KB</span>
+                    </div>
+                    <div class="metric-cell">
+                        <span class="metric-name">New Size</span>
+                        <span class="metric-data tabular-nums" id="metricNewTotal">—</span>
+                    </div>
+                    <div class="metric-cell">
+                        <span class="metric-name">Space Saved</span>
+                        <span class="metric-data green tabular-nums" id="metricSavingsTotal">0%</span>
+                    </div>
+                </div>
+
+                <div class="view-controls">
+                    <button type="button" class="view-toggle-btn active" id="btnViewList" title="List View">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                        List
+                    </button>
+                    <button type="button" class="view-toggle-btn" id="btnViewGrid" title="Grid View">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                        Grid
+                    </button>
+                    <button type="button" class="pill-button" id="workspaceClearBtn" style="padding: 0.35rem 0.65rem; font-size: 0.75rem;">Clear All</button>
+                </div>
+            </div>
+
+            <!-- Queue Container -->
+            <div class="queue-container" id="queueContainer">
+                <div class="zero-state" id="zeroState">
+                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    <span style="font-size: 0.92rem; font-weight: 500;">No images in the queue</span>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">Drop images above or click "Try with Demo Samples" to test instantly.</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Slide-Over Focused Resizing Guide -->
+    <div class="drawer-scrim" id="drawerScrim"></div>
+    <aside class="handbook-drawer" id="handbookDrawer">
+        <div class="handbook-header">
+            <div class="handbook-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                Image Resizing & Fitting Guide
+            </div>
+            <button type="button" class="action-btn" id="closeHandbookBtn">✕</button>
+        </div>
+
+        <div class="handbook-body">
+            <!-- 1. Quick Start -->
+            <div class="guide-article">
+                <h4>🚀 How to Use ImageFit</h4>
+                <p>1. <strong>Add Photos</strong>: Drag and drop files onto the box or click "Browse Files".</p>
+                <p>2. <strong>Choose Your Size</strong>: Pick a preset (e.g., Instagram 1080×1080) or type custom pixels.</p>
+                <p>3. <strong>Pick How to Fit</strong>: Select whether you want borders added, edges cropped, or natural ratio preserved.</p>
+                <p>4. <strong>Download</strong>: Click <em>"Process All Images"</em> then download individually or as a single ZIP archive.</p>
+            </div>
+
+            <!-- 2. Fitting Modes Explained -->
+            <div class="guide-article">
+                <h4>📐 Fitting Modes Explained</h4>
+                <p>• <strong>Fit inside (Contain)</strong>: Centers the whole photo inside your target dimensions and fills empty borders with your chosen background color. Nothing is ever cropped or cut off. Ideal for product listings and catalog standardization.</p>
+                <p>• <strong>Fill entire frame (Cover)</strong>: Zooms and neatly trims the excess edges so the entire box is filled with no borders. Great for social feeds, avatars, and website banners.</p>
+                <p>• <strong>Stretch to exact size</strong>: Ignores the photo's original proportions and forces width and height to match exactly.</p>
+                <p>• <strong>Scale by percentage</strong>: Multiplies width and height by a percentage (e.g., 50% makes it half the size).</p>
+                <p>• <strong>Limit longest edge</strong>: Keeps the original shape and shrinks the photo down so its longest side does not exceed your limit.</p>
+            </div>
+
+            <!-- 3. Which Format to Pick -->
+            <div class="guide-article">
+                <h4>📦 Format Guide</h4>
+                <table class="guide-table">
+                    <thead>
+                        <tr>
+                            <th>Format</th>
+                            <th>Best For</th>
+                            <th>Advantage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>WebP</strong></td>
+                            <td>Websites, Blogs, E-Commerce</td>
+                            <td>30%–80% smaller than JPG while staying crisp.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>JPEG</strong></td>
+                            <td>Print, Universal Sharing</td>
+                            <td>Opens on every computer and device.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>PNG</strong></td>
+                            <td>Logos, Transparent Graphics</td>
+                            <td>Lossless, preserves clear backgrounds.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 4. Common Dimensions -->
+            <div class="guide-article">
+                <h4>📱 Common Resolution Standards</h4>
+                <p>• <strong>Square Post</strong>: 1080 × 1080 px (1:1)</p>
+                <p>• <strong>Story / Reel / TikTok</strong>: 1080 × 1920 px (9:16)</p>
+                <p>• <strong>YouTube Thumbnail</strong>: 1280 × 720 px (16:9)</p>
+                <p>• <strong>E-Commerce Product</strong>: 1000 × 1000 px</p>
+                <p>• <strong>Full HD Screen</strong>: 1920 × 1080 px</p>
+            </div>
+
+            <!-- 5. Support / Tip Creator -->
+            <div class="guide-article" style="border-color: rgba(16, 185, 129, 0.35); background: rgba(16, 185, 129, 0.05);">
+                <h4 style="color: #10b981;">💚 Support This Free Tool</h4>
+                <p>ImageFit is 100% free and runs completely in your browser with zero paywalls. If it saved you time, support development via Cash App!</p>
+                <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.35rem; flex-wrap: wrap;">
+                    <span class="tabular-nums" style="background: var(--bg-input); border: 1px solid var(--border); padding: 0.35rem 0.65rem; border-radius: 6px; font-weight: 700; color: #10b981;">$static9072</span>
+                    <button type="button" class="pill-button" id="guideCopyBtn">Copy Tag</button>
+                    <a href="https://cash.app/$static9072" target="_blank" rel="noopener noreferrer" class="pill-button" style="color: #10b981; border-color: rgba(16, 185, 129, 0.4); text-decoration: none;">Open Cash App ↗</a>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Before / After Split Slider Compare Modal -->
+    <div class="modal-shade" id="compareModal">
+        <div class="modal-window">
+            <div class="modal-bar">
+                <span id="modalFilename" style="font-weight: 700; font-size: 0.95rem;">Before / After Comparison</span>
+                <button type="button" class="action-btn" id="closeCompareBtn">✕</button>
+            </div>
+
+            <div class="modal-viewport">
+                <!-- Interactive Split Slider -->
+                <div class="split-slider-container" id="splitSliderContainer">
+                    <div class="slider-image-layer">
+                        <img id="modalOrigImg" alt="Original">
+                    </div>
+                    <div class="slider-after-layer" id="sliderAfterLayer">
+                        <img id="modalNewImg" alt="Resized">
+                    </div>
+                    <div class="split-divider-line" id="splitDividerLine"></div>
+                    <div class="slider-handle-tag new">Resized (Left)</div>
+                    <div class="slider-handle-tag orig">Original (Right)</div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted);">
+                        <span>Drag slider to compare clarity:</span>
+                        <span id="sliderValLabel">50%</span>
+                    </div>
+                    <input type="range" id="splitRange" class="split-range-input" min="0" max="100" value="50">
+                </div>
+
+                <!-- Stats Details -->
+                <div class="compare-stats-card">
+                    <div class="compare-side">
+                        <h5>Original Source</h5>
+                        <div class="compare-detail tabular-nums" id="modalOrigDim">-</div>
+                        <div class="compare-detail tabular-nums" id="modalOrigBytes" style="color: var(--text-muted);">-</div>
+                    </div>
+                    <div class="compare-side">
+                        <h5>ImageFit Output</h5>
+                        <div class="compare-detail tabular-nums" id="modalNewDim" style="color: var(--accent); font-weight: 700;">-</div>
+                        <div class="compare-detail tabular-nums" id="modalNewBytes" style="color: var(--success); font-weight: 600;">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Support / Tip Jar Modal -->
+    <div class="modal-shade" id="supportModal">
+        <div class="modal-window" style="max-width: 460px;">
+            <div class="modal-bar">
+                <div style="display: flex; align-items: center; gap: 0.55rem;">
+                    <div style="background: rgba(16, 185, 129, 0.15); color: #10b981; width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1rem;">$</div>
+                    <span style="font-weight: 700; font-size: 0.95rem;">Support ImageFit Creator</span>
+                </div>
+                <button type="button" class="action-btn" id="closeSupportBtn">✕</button>
+            </div>
+
+            <div class="modal-viewport" style="gap: 1.25rem; text-align: center; align-items: center;">
+                <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 12px; padding: 1.25rem; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 0.65rem;">
+                    <span style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 600;">Cash App Cashtag</span>
+                    <div style="display: flex; align-items: center; gap: 0.65rem; justify-content: center;">
+                        <span class="tabular-nums" style="font-size: 1.85rem; font-weight: 800; color: #10b981; letter-spacing: -0.01em;">$static9072</span>
+                        <button type="button" id="modalCopyTagBtn" class="pill-button" title="Copy tag" style="padding: 0.35rem 0.65rem; font-size: 0.78rem;">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                            <span id="copyBtnLabel">Copy</span>
+                        </button>
+                    </div>
+                </div>
+
+                <p style="font-size: 0.84rem; color: var(--text-secondary); line-height: 1.55; margin: 0 auto; max-width: 380px;">
+                    ImageFit is 100% free, runs privately in your browser, and has zero subscriptions. If it saved you time or improved your workflow, your support is hugely appreciated!
+                </p>
+
+                <div style="display: flex; flex-direction: column; gap: 0.65rem; width: 100%;">
+                    <a href="https://cash.app/$static9072" target="_blank" rel="noopener noreferrer" class="btn-full btn-success-action" style="text-decoration: none; font-size: 0.9rem;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        Send Tip on cash.app/$static9072 ↗
+                    </a>
+                    <button type="button" class="btn-full" id="modalCloseBtn" style="background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);">
+                        Done
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <strong>ImageFit</strong>
+            <span>·</span>
+            <span>Pure Standalone Image Resizer & Normalizer</span>
+            <span>·</span>
+            <span>Zero Server Egress</span>
+        </div>
+        <div class="footer-links">
+            <a class="footer-link" id="footerSupportLink" style="color: #10b981; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                Support ($static9072)
+            </a>
+            <a class="footer-link" id="footerGuideLink">Resizing Guide</a>
+            <a class="footer-link" id="footerSamplesLink">Load Test Images</a>
+            <span>MIT License</span>
+        </div>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // State - Pure, Focused Image Resizing & Normalizing
+        const appState = {
+            images: [], // array of { id, file, name, origUrl, origSize, origW, origH, processedBlob, processedUrl, processedW, processedH, processedSize, status: 'queued'|'processing'|'ready'|'failed', error }
+            paddingColor: '#ffffff',
+            viewMode: 'list', // 'list' | 'grid'
+            isProcessing: false
+        };
+
+        // DOM References
+        const dropdeck = document.getElementById('dropdeck');
+        const bulkFileInput = document.getElementById('bulkFileInput');
+        const deckBrowseBtn = document.getElementById('deckBrowseBtn');
+        const deckSampleBtn = document.getElementById('deckSampleBtn');
+        const loadDemoBtn = document.getElementById('loadDemoBtn');
+        const headerClearBtn = document.getElementById('headerClearBtn');
+        const workspaceClearBtn = document.getElementById('workspaceClearBtn');
+        const startBatchBtn = document.getElementById('startBatchBtn');
+        const zipDownloadBtn = document.getElementById('zipDownloadBtn');
+        const queueContainer = document.getElementById('queueContainer');
+        const zeroState = document.getElementById('zeroState');
+        const queueCountBadge = document.getElementById('queueCountBadge');
+
+        // Form inputs
+        const sizePreset = document.getElementById('sizePreset');
+        const fitMode = document.getElementById('fitMode');
+        const fitExplanation = document.getElementById('fitExplanation');
+        const inputWidth = document.getElementById('inputWidth');
+        const inputHeight = document.getElementById('inputHeight');
+        const dimsRow = document.getElementById('dimsRow');
+        const aspectRatioLockBtn = document.getElementById('aspectRatioLockBtn');
+        const lockIcon = document.getElementById('lockIcon');
+        const lockText = document.getElementById('lockText');
+        const scaleGroup = document.getElementById('scaleGroup');
+        const inputScale = document.getElementById('inputScale');
+        const scaleValTag = document.getElementById('scaleValTag');
+        const longestGroup = document.getElementById('longestGroup');
+        const inputLongest = document.getElementById('inputLongest');
+        const borderBgGroup = document.getElementById('borderBgGroup');
+
+        const customColorInput = document.getElementById('customColorInput');
+        const outputFormatSelect = document.getElementById('outputFormatSelect');
+        const inputQuality = document.getElementById('inputQuality');
+        const qualityValTag = document.getElementById('qualityValTag');
+        const qualityWrapper = document.getElementById('qualityWrapper');
+        const fileSuffixInput = document.getElementById('fileSuffixInput');
+
+        // Metrics & Progress
+        const progressBox = document.getElementById('progressBox');
+        const progressStatusLabel = document.getElementById('progressStatusLabel');
+        const progressPercentLabel = document.getElementById('progressPercentLabel');
+        const progressBarFill = document.getElementById('progressBarFill');
+
+        const metricsStrip = document.getElementById('metricsStrip');
+        const metricTotalCount = document.getElementById('metricTotalCount');
+        const metricReadyCount = document.getElementById('metricReadyCount');
+        const metricOrigTotal = document.getElementById('metricOrigTotal');
+        const metricNewTotal = document.getElementById('metricNewTotal');
+        const metricSavingsTotal = document.getElementById('metricSavingsTotal');
+
+        const btnViewList = document.getElementById('btnViewList');
+        const btnViewGrid = document.getElementById('btnViewGrid');
+
+        // Handbook Drawer
+        const openHandbookBtn = document.getElementById('openHandbookBtn');
+        const closeHandbookBtn = document.getElementById('closeHandbookBtn');
+        const handbookDrawer = document.getElementById('handbookDrawer');
+        const drawerScrim = document.getElementById('drawerScrim');
+        const footerGuideLink = document.getElementById('footerGuideLink');
+        const footerSamplesLink = document.getElementById('footerSamplesLink');
+        const footerSupportLink = document.getElementById('footerSupportLink');
+
+        // Support Modal
+        const openSupportBtn = document.getElementById('openSupportBtn');
+        const supportModal = document.getElementById('supportModal');
+        const closeSupportBtn = document.getElementById('closeSupportBtn');
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
+        const modalCopyTagBtn = document.getElementById('modalCopyTagBtn');
+        const copyBtnLabel = document.getElementById('copyBtnLabel');
+        const guideCopyBtn = document.getElementById('guideCopyBtn');
+
+        // Compare Modal
+        const compareModal = document.getElementById('compareModal');
+        const closeCompareBtn = document.getElementById('closeCompareBtn');
+        const modalFilename = document.getElementById('modalFilename');
+        const modalOrigImg = document.getElementById('modalOrigImg');
+        const modalNewImg = document.getElementById('modalNewImg');
+        const modalOrigDim = document.getElementById('modalOrigDim');
+        const modalOrigBytes = document.getElementById('modalOrigBytes');
+        const modalNewDim = document.getElementById('modalNewDim');
+        const modalNewBytes = document.getElementById('modalNewBytes');
+        const splitRange = document.getElementById('splitRange');
+        const sliderAfterLayer = document.getElementById('sliderAfterLayer');
+        const sliderValLabel = document.getElementById('sliderValLabel');
+        const splitSliderContainer = document.getElementById('splitSliderContainer');
+        const splitDividerLine = document.getElementById('splitDividerLine');
+
+        // Helpers
+        function formatBytes(bytes, decimals = 1) {
+            if (!bytes || bytes <= 0) return '0 B';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
         }
 
-        main {
-            flex: 1;
-            max-width: 1200px;
-            width: 100%;
-            margin: 0 auto;
-            padding: 2rem;
-            display: grid;
-            grid-template-columns: 350px 1fr;
-            gap: 2rem;
+        function createUniqueId() {
+            return 'img_' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
         }
 
-        @media (max-width: 900px) {
-            main {
-                grid-template-columns: 1fr;
+        // Handbook Drawer Triggers
+        function openHandbook() {
+            handbookDrawer.classList.add('open');
+            drawerScrim.classList.add('open');
+        }
+        function closeHandbook() {
+            handbookDrawer.classList.remove('open');
+            drawerScrim.classList.remove('open');
+        }
+        openHandbookBtn.addEventListener('click', openHandbook);
+        footerGuideLink.addEventListener('click', openHandbook);
+        closeHandbookBtn.addEventListener('click', closeHandbook);
+        drawerScrim.addEventListener('click', closeHandbook);
+
+        // View Mode Switcher
+        btnViewList.addEventListener('click', () => {
+            appState.viewMode = 'list';
+            btnViewList.classList.add('active');
+            btnViewGrid.classList.remove('active');
+            queueContainer.classList.remove('grid-view');
+        });
+        btnViewGrid.addEventListener('click', () => {
+            appState.viewMode = 'grid';
+            btnViewGrid.classList.add('active');
+            btnViewList.classList.remove('active');
+            queueContainer.classList.add('grid-view');
+        });
+
+        // Fitting Mode Explanations & Controls
+        const fitExplanations = {
+            contain: "Adds clean borders to non-square photos so your subject is completely preserved without awkward cuts.",
+            cover: "Crops excess edges evenly from the center to fill the exact dimensions without any borders.",
+            exact: "Forces the image into the exact width and height, stretching or squishing if proportions differ.",
+            scale: "Multiplies width and height by a percentage to make the photo smaller or larger.",
+            longest: "Keeps the photo's natural shape and caps its longest side so it doesn't exceed your target size.",
+            width: "Scales the photo to your exact width, automatically computing the matching proportional height.",
+            height: "Scales the photo to your exact height, automatically computing the matching proportional width."
+        };
+
+        fitMode.addEventListener('change', () => {
+            const mode = fitMode.value;
+            fitExplanation.textContent = fitExplanations[mode] || "";
+            dimsRow.style.display = (mode === 'contain' || mode === 'cover' || mode === 'exact') ? 'grid' : 'none';
+            scaleGroup.style.display = (mode === 'scale') ? 'flex' : 'none';
+            longestGroup.style.display = (mode === 'longest') ? 'flex' : 'none';
+            borderBgGroup.style.display = (mode === 'contain') ? 'flex' : 'none';
+
+            if (mode === 'width') {
+                dimsRow.style.display = 'grid';
+                inputHeight.parentElement.style.display = 'none';
+                inputWidth.parentElement.style.display = 'flex';
+            } else if (mode === 'height') {
+                dimsRow.style.display = 'grid';
+                inputWidth.parentElement.style.display = 'none';
+                inputHeight.parentElement.style.display = 'flex';
+            } else {
+                inputWidth.parentElement.style.display = 'flex';
+                inputHeight.parentElement.style.display = 'flex';
+            }
+        });
+
+        // Aspect Ratio Lock State & Handler
+        let isAspectLocked = true;
+        let lockedRatio = 1.0;
+
+        function updateLockStateUI() {
+            const w = parseInt(inputWidth.value) || 1080;
+            const h = parseInt(inputHeight.value) || 1080;
+            if (h > 0) lockedRatio = w / h;
+
+            if (isAspectLocked) {
+                let ratioLabel = '1:1';
+                if (Math.abs(lockedRatio - 1) < 0.02) ratioLabel = '1:1';
+                else if (Math.abs(lockedRatio - (16/9)) < 0.02) ratioLabel = '16:9';
+                else if (Math.abs(lockedRatio - (9/16)) < 0.02) ratioLabel = '9:16';
+                else if (Math.abs(lockedRatio - (4/3)) < 0.02) ratioLabel = '4:3';
+                else if (Math.abs(lockedRatio - (3/2)) < 0.02) ratioLabel = '3:2';
+                else ratioLabel = `${w}:${h}`;
+
+                lockText.textContent = `Locked (${ratioLabel})`;
+                aspectRatioLockBtn.style.borderColor = 'var(--accent)';
+                aspectRatioLockBtn.style.color = 'var(--accent)';
+                lockIcon.innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path>';
+            } else {
+                lockText.textContent = 'Unlocked';
+                aspectRatioLockBtn.style.borderColor = 'var(--border)';
+                aspectRatioLockBtn.style.color = 'var(--text-muted)';
+                lockIcon.innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0"></path>';
             }
         }
 
-        .panel {
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-            height: fit-content;
+        aspectRatioLockBtn.addEventListener('click', () => {
+            isAspectLocked = !isAspectLocked;
+            const w = parseInt(inputWidth.value) || 1080;
+            const h = parseInt(inputHeight.value) || 1080;
+            if (h > 0) lockedRatio = w / h;
+            updateLockStateUI();
+        });
+
+        // Presets Change
+        sizePreset.addEventListener('change', () => {
+            const val = sizePreset.value;
+            if (val === 'custom') return;
+            const [w, h] = val.split('x').map(Number);
+            inputWidth.value = w;
+            inputHeight.value = h;
+            updateLockStateUI();
+        });
+
+        inputWidth.addEventListener('input', () => {
+            sizePreset.value = 'custom';
+            if (isAspectLocked && lockedRatio > 0) {
+                const w = parseInt(inputWidth.value);
+                if (w && w > 0) {
+                    inputHeight.value = Math.max(16, Math.round(w / lockedRatio));
+                }
+            } else {
+                const w = parseInt(inputWidth.value) || 1080;
+                const h = parseInt(inputHeight.value) || 1080;
+                if (h > 0) lockedRatio = w / h;
+            }
+            updateLockStateUI();
+        });
+
+        inputHeight.addEventListener('input', () => {
+            sizePreset.value = 'custom';
+            if (isAspectLocked && lockedRatio > 0) {
+                const h = parseInt(inputHeight.value);
+                if (h && h > 0) {
+                    inputWidth.value = Math.max(16, Math.round(h * lockedRatio));
+                }
+            } else {
+                const w = parseInt(inputWidth.value) || 1080;
+                const h = parseInt(inputHeight.value) || 1080;
+                if (h > 0) lockedRatio = w / h;
+            }
+            updateLockStateUI();
+        });
+
+        // Sliders Feedback
+        inputScale.addEventListener('input', () => {
+            scaleValTag.textContent = inputScale.value + '%';
+        });
+        inputQuality.addEventListener('input', () => {
+            qualityValTag.textContent = inputQuality.value + '%';
+        });
+
+        outputFormatSelect.addEventListener('change', () => {
+            const format = outputFormatSelect.value;
+            qualityWrapper.style.display = (format === 'image/png') ? 'none' : 'flex';
+        });
+
+        // Background Color Chips
+        document.querySelectorAll('.color-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.querySelectorAll('.color-chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                appState.paddingColor = chip.getAttribute('data-color');
+            });
+        });
+        customColorInput.addEventListener('input', (e) => {
+            document.querySelectorAll('.color-chip').forEach(c => c.classList.remove('active'));
+            appState.paddingColor = e.target.value;
+        });
+
+        // Drag and Drop Intake
+        ['dragenter', 'dragover'].forEach(name => {
+            dropdeck.addEventListener(name, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropdeck.classList.add('dragover');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(name => {
+            dropdeck.addEventListener(name, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropdeck.classList.remove('dragover');
+            });
+        });
+
+        dropdeck.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            if (files && files.length > 0) processIncomingFiles(files);
+        });
+
+        dropdeck.addEventListener('click', (e) => {
+            if (e.target.closest('button')) return;
+            bulkFileInput.click();
+        });
+
+        deckBrowseBtn.addEventListener('click', () => bulkFileInput.click());
+        bulkFileInput.addEventListener('change', () => {
+            if (bulkFileInput.files && bulkFileInput.files.length > 0) {
+                processIncomingFiles(bulkFileInput.files);
+                bulkFileInput.value = '';
+            }
+        });
+
+        // Realistic Demo Test Samples Generator
+        async function createDemoAsset(name, w, h, bgGradient, tagText) {
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+
+            const grad = ctx.createLinearGradient(0, 0, w, h);
+            grad.addColorStop(0, bgGradient[0]);
+            grad.addColorStop(1, bgGradient[1]);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.lineWidth = Math.max(2, Math.round(w / 300));
+            ctx.beginPath();
+            ctx.arc(w / 2, h / 2, Math.min(w, h) * 0.35, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+            ctx.beginPath();
+            ctx.rect(w * 0.1, h * 0.1, w * 0.8, h * 0.8);
+            ctx.fill();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = `bold ${Math.max(24, Math.round(w / 18))}px 'Plus Jakarta Sans', sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(name, w / 2, h / 2 - 20);
+
+            ctx.font = `${Math.max(14, Math.round(w / 32))}px 'JetBrains Mono', monospace`;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+            ctx.fillText(`${w} × ${h} px · ${tagText}`, w / 2, h / 2 + 25);
+
+            return new Promise(resolve => {
+                canvas.toBlob(blob => {
+                    const file = new File([blob], `${name.toLowerCase().replace(/\\s+/g, '_')}_${w}x${h}.jpg`, { type: 'image/jpeg' });
+                    resolve(file);
+                }, 'image/jpeg', 0.95);
+            });
         }
 
-        .panel h2 {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+        async function injectDemoSamples() {
+            const samples = [
+                await createDemoAsset('Product_Sneaker', 2400, 1600, ['#0f172a', '#3b82f6'], 'Catalog Photo'),
+                await createDemoAsset('Portrait_Headshot', 1600, 2400, ['#4a044e', '#c026d3'], 'High Res Vertical'),
+                await createDemoAsset('Hero_Panoramic', 3200, 1200, ['#064e3b', '#10b981'], 'Wide Web Banner'),
+                await createDemoAsset('Studio_Artwork', 1800, 1800, ['#7c2d12', '#f97316'], 'Square Canvas')
+            ];
+            processIncomingFiles(samples);
         }
 
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
+        loadDemoBtn.addEventListener('click', injectDemoSamples);
+        deckSampleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            injectDemoSamples();
+        });
+        footerSamplesLink.addEventListener('click', injectDemoSamples);
+
+        // Process Incoming Files
+        function processIncomingFiles(fileList) {
+            const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+            if (files.length === 0) return;
+
+            files.forEach(file => {
+                const id = createUniqueId();
+                const origUrl = URL.createObjectURL(file);
+
+                const item = {
+                    id,
+                    file,
+                    name: file.name,
+                    origSize: file.size,
+                    mimeType: file.type,
+                    origUrl,
+                    origW: null,
+                    origH: null,
+                    processedBlob: null,
+                    processedUrl: null,
+                    processedW: null,
+                    processedH: null,
+                    processedSize: null,
+                    status: 'queued',
+                    error: null
+                };
+
+                appState.images.push(item);
+                renderItemDOM(item);
+
+                const img = new Image();
+                img.onload = () => {
+                    item.origW = img.naturalWidth;
+                    item.origH = img.naturalHeight;
+                    updateItemMetaDOM(item);
+                    recalcMetrics();
+                };
+                img.src = origUrl;
+            });
+
+            syncUIState();
         }
 
-        label {
-            font-size: 0.85rem;
-            font-weight: 500;
+        function syncUIState() {
+            const count = appState.images.length;
+            const readyCount = appState.images.filter(i => i.status === 'ready').length;
+
+            queueCountBadge.textContent = `${count} image${count === 1 ? '' : 's'}`;
+            zeroState.style.display = count === 0 ? 'flex' : 'none';
+            metricsStrip.style.display = count > 0 ? 'flex' : 'none';
+            headerClearBtn.style.display = count > 0 ? 'inline-flex' : 'none';
+
+            startBatchBtn.disabled = count === 0 || appState.isProcessing;
+            zipDownloadBtn.disabled = readyCount === 0;
+
+            recalcMetrics();
         }
 
-        input[type="number"], select {
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 0.75rem;
-            color: var(--text-main);
-            font-size: 0.9rem;
-            outline: none;
-            transition: border-color 0.2s;
+        function recalcMetrics() {
+            const total = appState.images.length;
+            const completedItems = appState.images.filter(i => i.status === 'ready' && i.processedSize);
+            const readyCount = completedItems.length;
+
+            const origBytesTotal = appState.images.reduce((acc, curr) => acc + (curr.origSize || 0), 0);
+            const newBytesTotal = completedItems.reduce((acc, curr) => acc + (curr.processedSize || 0), 0);
+
+            metricTotalCount.textContent = total;
+            metricReadyCount.textContent = `${readyCount} / ${total}`;
+            metricOrigTotal.textContent = formatBytes(origBytesTotal);
+            metricNewTotal.textContent = readyCount > 0 ? formatBytes(newBytesTotal) : '—';
+
+            if (readyCount > 0 && origBytesTotal > 0) {
+                const matchingOrig = completedItems.reduce((acc, curr) => acc + (curr.origSize || 0), 0);
+                const reduction = Math.round(((matchingOrig - newBytesTotal) / matchingOrig) * 100);
+                metricSavingsTotal.textContent = reduction > 0 ? `-${reduction}%` : `${reduction}%`;
+                metricSavingsTotal.style.color = reduction > 0 ? 'var(--success)' : 'var(--text-main)';
+            } else {
+                metricSavingsTotal.textContent = '0%';
+                metricSavingsTotal.style.color = 'var(--text-main)';
+            }
         }
 
-        input[type="number"]:focus, select:focus {
-            border-color: var(--accent);
+        // Render Individual Item DOM
+        function renderItemDOM(item) {
+            const card = document.createElement('div');
+            card.className = 'batch-card';
+            card.id = `card_${item.id}`;
+
+            card.innerHTML = `
+                <div class="preview-frame">
+                    <img class="preview-img" src="${item.origUrl}" alt="${item.name}">
+                </div>
+                <div class="item-info">
+                    <div class="item-title" title="${item.name}">${item.name}</div>
+                    <div class="item-meta-line" id="meta_${item.id}">
+                        <span class="tabular-nums">${formatBytes(item.origSize)}</span>
+                        <span>·</span>
+                        <span class="tabular-nums" id="dim_${item.id}">Reading...</span>
+                    </div>
+                    <div>
+                        <span class="status-pill queued" id="pill_${item.id}">Queued</span>
+                    </div>
+                </div>
+                <div class="action-icon-group">
+                    <button type="button" class="action-btn" id="cmpBtn_${item.id}" title="Before / After Compare" disabled>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    </button>
+                    <button type="button" class="action-btn" id="dlBtn_${item.id}" title="Download Image" disabled>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    </button>
+                    <button type="button" class="action-btn trash" id="delBtn_${item.id}" title="Remove Image">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                </div>
+            `;
+
+            queueContainer.appendChild(card);
+
+            card.querySelector(`#delBtn_${item.id}`).addEventListener('click', () => deleteItem(item.id));
+            card.querySelector(`#cmpBtn_${item.id}`).addEventListener('click', () => openCompareModal(item));
+            card.querySelector(`#dlBtn_${item.id}`).addEventListener('click', () => downloadSingleAsset(item));
         }
 
-        .dropzone {
-            border: 2px dashed var(--border);
-            border-radius: 12px;
-            padding: 3rem 2rem;
-            text-align: center;
-            background: var(--bg-secondary);
-            cursor: pointer;
-            transition: all 0.2s;
+        function updateItemMetaDOM(item) {
+            const metaEl = document.getElementById(`meta_${item.id}`);
+            const pillEl = document.getElementById(`pill_${item.id}`);
+            const cmpBtn = document.getElementById(`cmpBtn_${item.id}`);
+            const dlBtn = document.getElementById(`dlBtn_${item.id}`);
+            const dimEl = document.getElementById(`dim_${item.id}`);
+
+            if (!metaEl) return;
+
+            if (item.status === 'ready') {
+                const savingsPct = Math.round(((item.origSize - item.processedSize) / item.origSize) * 100);
+                const tag = savingsPct > 0 ? `<span class="savings-tag">-${savingsPct}%</span>` : '';
+
+                metaEl.innerHTML = `
+                    <span class="tabular-nums">${item.origW}×${item.origH}</span>
+                    <span class="meta-arrow">➔</span>
+                    <strong style="color: var(--text-main);" class="tabular-nums">${item.processedW}×${item.processedH}</strong>
+                    <span>·</span>
+                    <span class="tabular-nums">${formatBytes(item.processedSize)}</span>
+                    ${tag}
+                `;
+
+                pillEl.className = 'status-pill ready';
+                pillEl.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg> Ready`;
+
+                cmpBtn.disabled = false;
+                dlBtn.disabled = false;
+            } else if (item.status === 'processing') {
+                pillEl.className = 'status-pill processing';
+                pillEl.textContent = 'Resizing...';
+            } else if (item.status === 'failed') {
+                pillEl.className = 'status-pill failed';
+                pillEl.textContent = 'Error';
+            } else {
+                if (item.origW && item.origH && dimEl) {
+                    dimEl.textContent = `${item.origW} × ${item.origH} px`;
+                }
+            }
+        }
+
+        function deleteItem(id) {
+            const index = appState.images.findIndex(i => i.id === id);
+            if (index !== -1) {
+                const item = appState.images[index];
+                if (item.origUrl) URL.revokeObjectURL(item.origUrl);
+                if (item.processedUrl) URL.revokeObjectURL(item.processedUrl);
+                appState.images.splice(index, 1);
+            }
+            const el = document.getElementById(`card_${id}`);
+            if (el) el.remove();
+            syncUIState();
+        }
+
+        function clearAllQueue() {
+            appState.images.forEach(i => {
+                if (i.origUrl) URL.revokeObjectURL(i.origUrl);
+                if (i.processedUrl) URL.revokeObjectURL(i.processedUrl);
+            });
+            appState.images = [];
+            queueContainer.innerHTML = '';
+            queueContainer.appendChild(zeroState);
+            syncUIState();
+        }
+
+        headerClearBtn.addEventListener('click', clearAllQueue);
+        workspaceClearBtn.addEventListener('click', clearAllQueue);
+
+        // Native High-Precision Resizing & Fitting Engine
+        async function renderProcessedImage(item) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+
+                img.onload = () => {
+                    try {
+                        const origW = img.naturalWidth;
+                        const origH = img.naturalHeight;
+                        const mode = fitMode.value;
+
+                        let targetW = parseInt(inputWidth.value) || 1080;
+                        let targetH = parseInt(inputHeight.value) || 1080;
+
+                        let canvasW = targetW;
+                        let canvasH = targetH;
+                        let drawX = 0;
+                        let drawY = 0;
+                        let drawW = targetW;
+                        let drawH = targetH;
+
+                        if (mode === 'exact') {
+                            canvasW = targetW;
+                            canvasH = targetH;
+                            drawW = targetW;
+                            drawH = targetH;
+                        } else if (mode === 'scale') {
+                            const scale = (parseInt(inputScale.value) || 100) / 100;
+                            canvasW = Math.max(1, Math.round(origW * scale));
+                            canvasH = Math.max(1, Math.round(origH * scale));
+                            drawW = canvasW;
+                            drawH = canvasH;
+                        } else if (mode === 'longest') {
+                            const maxEdge = parseInt(inputLongest.value) || 1200;
+                            if (origW >= origH) {
+                                canvasW = maxEdge;
+                                canvasH = Math.max(1, Math.round(origH * (maxEdge / origW)));
+                            } else {
+                                canvasH = maxEdge;
+                                canvasW = Math.max(1, Math.round(origW * (maxEdge / origH)));
+                            }
+                            drawW = canvasW;
+                            drawH = canvasH;
+                        } else if (mode === 'width') {
+                            canvasW = targetW;
+                            canvasH = Math.max(1, Math.round(origH * (targetW / origW)));
+                            drawW = canvasW;
+                            drawH = canvasH;
+                        } else if (mode === 'height') {
+                            canvasH = targetH;
+                            canvasW = Math.max(1, Math.round(origW * (targetH / origH)));
+                            drawW = canvasW;
+                            drawH = canvasH;
+                        } else if (mode === 'contain') {
+                            canvasW = targetW;
+                            canvasH = targetH;
+                            const factor = Math.min(targetW / origW, targetH / origH);
+                            drawW = Math.round(origW * factor);
+                            drawH = Math.round(origH * factor);
+                            drawX = Math.round((targetW - drawW) / 2);
+                            drawY = Math.round((targetH - drawH) / 2);
+                        } else if (mode === 'cover') {
+                            canvasW = targetW;
+                            canvasH = targetH;
+                            const factor = Math.max(targetW / origW, targetH / origH);
+                            drawW = Math.round(origW * factor);
+                            drawH = Math.round(origH * factor);
+                            drawX = Math.round((targetW - drawW) / 2);
+                            drawY = Math.round((targetH - drawH) / 2);
+                        }
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = canvasW;
+                        canvas.height = canvasH;
+                        const ctx = canvas.getContext('2d');
+
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+
+                        let chosenFormat = outputFormatSelect.value;
+                        if (chosenFormat === 'original') chosenFormat = item.mimeType || 'image/jpeg';
+
+                        if (mode === 'contain' && appState.paddingColor !== 'transparent') {
+                            ctx.fillStyle = appState.paddingColor;
+                            ctx.fillRect(0, 0, canvasW, canvasH);
+                        } else if (chosenFormat === 'image/jpeg') {
+                            ctx.fillStyle = appState.paddingColor !== 'transparent' ? appState.paddingColor : '#ffffff';
+                            ctx.fillRect(0, 0, canvasW, canvasH);
+                        }
+
+                        ctx.drawImage(img, drawX, drawY, drawW, drawH);
+
+                        const quality = (parseInt(inputQuality.value) || 85) / 100;
+                        canvas.toBlob(blob => {
+                            if (!blob) {
+                                reject(new Error('Export blob failed'));
+                                return;
+                            }
+                            if (item.processedUrl) URL.revokeObjectURL(item.processedUrl);
+                            item.processedBlob = blob;
+                            item.processedUrl = URL.createObjectURL(blob);
+                            item.processedW = canvasW;
+                            item.processedH = canvasH;
+                            item.processedSize = blob.size;
+                            item.status = 'ready';
+                            resolve(item);
+                        }, chosenFormat, quality);
+
+                    } catch (err) {
+                        reject(err);
+                    }
+                };
+
+                img.onerror = () => reject(new Error('Failed to load image into memory'));
+                img.src = item.origUrl;
+            });
+        }
+
+        // Batch Execution
+        async function runBatchProcessing() {
+            if (appState.images.length === 0 || appState.isProcessing) return;
+
+            appState.isProcessing = true;
+            startBatchBtn.disabled = true;
+            zipDownloadBtn.disabled = true;
+            progressBox.classList.add('active');
+
+            const total = appState.images.length;
+            let current = 0;
+
+            for (const item of appState.images) {
+                item.status = 'processing';
+                updateItemMetaDOM(item);
+
+                progressStatusLabel.textContent = `Resizing (${current + 1}/${total}): ${item.name}`;
+                const pct = Math.round((current / total) * 100);
+                progressPercentLabel.textContent = `${pct}%`;
+                progressBarFill.style.width = `${pct}%`;
+
+                try {
+                    await renderProcessedImage(item);
+                } catch (err) {
+                    console.error('Batch item error:', item.name, err);
+                    item.status = 'failed';
+                    item.error = err.message;
+                }
+
+                current++;
+                updateItemMetaDOM(item);
+                recalcMetrics();
+            }
+
+            progressStatusLabel.textContent = `Completed batch of ${total} images!`;
+            progressPercentLabel.textContent = '100%';
+            progressBarFill.style.width = '100%';
+
+            setTimeout(() => {
+                progressBox.classList.remove('active');
+            }, 2500);
+
+            appState.isProcessing = false;
+            syncUIState();
+        }
+
+        startBatchBtn.addEventListener('click', runBatchProcessing);
+
+        // Filename Builder
+        function createExportFilename(item) {
+            const dot = item.name.lastIndexOf('.');
+            const base = dot !== -1 ? item.name.substring(0, dot) : item.name;
+            const suffix = fileSuffixInput.value || '';
+
+            let format = outputFormatSelect.value;
+            if (format === 'original') format = item.mimeType;
+
+            let ext = 'webp';
+            if (format === 'image/jpeg') ext = 'jpg';
+            else if (format === 'image/png') ext = 'png';
+            else if (format === 'image/webp') ext = 'webp';
+
+            return `${base}${suffix}.${ext}`;
+        }
+
+        // Download Single Image
+        function downloadSingleAsset(item) {
+            if (!item.processedBlob) return;
+            const a = document.createElement('a');
+            a.href = item.processedUrl;
+            a.download = createExportFilename(item);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        // Download Bulk ZIP
+        async function downloadZipArchive() {
+            const readyItems = appState.images.filter(i => i.status === 'ready' && i.processedBlob);
+            if (readyItems.length === 0) return;
+
+            if (typeof JSZip === 'undefined') {
+                alert('JSZip is initializing. Please try again in a few moments.');
+                return;
+            }
+
+            zipDownloadBtn.disabled = true;
+            zipDownloadBtn.innerHTML = `Packaging ZIP...`;
+
+            try {
+                const zip = new JSZip();
+
+                readyItems.forEach(item => {
+                    const filename = createExportFilename(item);
+                    zip.file(filename, item.processedBlob);
+                });
+
+                const content = await zip.generateAsync({
+                    type: 'blob',
+                    compression: 'DEFLATE',
+                    compressionOptions: { level: 6 }
+                });
+
+                const zipUrl = URL.createObjectURL(content);
+                const a = document.createElement('a');
+                a.href = zipUrl;
+                a.download = `ImageFit_batch_${Date.now()}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(zipUrl);
+
+            } catch (err) {
+                console.error('ZIP generation error:', err);
+                alert('ZIP creation error: ' + err.message);
+            } finally {
+                zipDownloadBtn.disabled = false;
+                zipDownloadBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Download All as ZIP
+                `;
+            }
+        }
+
+        zipDownloadBtn.addEventListener('click', downloadZipArchive);
+
+        // Before / After Split Slider Compare Modal
+        function openCompareModal(item) {
+            modalFilename.textContent = `Comparison: ${item.name}`;
+            modalOrigImg.src = item.origUrl;
+            modalNewImg.src = item.processedUrl || item.origUrl;
+
+            modalOrigDim.textContent = `${item.origW} × ${item.origH} px`;
+            modalOrigBytes.textContent = `${formatBytes(item.origSize)} (${item.mimeType.replace('image/', '').toUpperCase()})`;
+
+            modalNewDim.textContent = `${item.processedW} × ${item.processedH} px`;
+            modalNewBytes.textContent = `${formatBytes(item.processedSize)} (${outputFormatSelect.value.replace('image/', '').toUpperCase()})`;
+
+            splitRange.value = 50;
+            updateSplitPosition(50);
+
+            compareModal.classList.add('active');
+        }
+
+        function updateSplitPosition(pct) {
+            const clipPct = 100 - pct;
+            sliderAfterLayer.style.clipPath = `inset(0 ${clipPct}% 0 0)`;
+            if (splitDividerLine) splitDividerLine.style.left = `${pct}%`;
+            sliderValLabel.textContent = `${pct}%`;
+        }
+
+        splitRange.addEventListener('input', (e) => {
+            updateSplitPosition(e.target.value);
+        });
+
+        window.addEventListener('resize', () => {
+            if (compareModal.classList.contains('active')) {
+                updateSplitPosition(splitRange.value);
+            }
+        });
+
+        closeCompareBtn.addEventListener('click', () => compareModal.classList.remove('active'));
+        compareModal.addEventListener('click', (e) => {
+            if (e.target === compareModal) compareModal.classList.remove('active');
+        });
+
+        // Support / Tip Jar Modal Handlers
+        function openSupportModal() {
+            supportModal.classList.add('active');
+        }
+
+        function closeSupportModal() {
+            supportModal.classList.remove('active');
+        }
+
+        function copyCashAppTag(btn, labelEl) {
+            navigator.clipboard.writeText('$static9072').then(() => {
+                if (labelEl) {
+                    const prev = labelEl.textContent;
+                    labelEl.textContent = 'Copied! ✓';
+                    setTimeout(() => { labelEl.textContent = prev; }, 2000);
+                } else if (btn) {
+                    const prev = btn.textContent;
+                    btn.textContent = 'Copied! ✓';
+                    setTimeout(() => { btn.textContent = prev; }, 2000);
+                }
+            }).catch(() => {
+                prompt('Cash App Cashtag:', '$static9072');
+            });
+        }
+
+        if (openSupportBtn) openSupportBtn.addEventListener('click', openSupportModal);
+        if (footerSupportLink) footerSupportLink.addEventListener('click', openSupportModal);
+        if (closeSupportBtn) closeSupportBtn.addEventListener('click', closeSupportModal);
+        if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeSupportModal);
+        if (supportModal) {
+            supportModal.addEventListener('click', (e) => {
+                if (e.target === supportModal) closeSupportModal();
+            });
+        }
+        if (modalCopyTagBtn) {
+            modalCopyTagBtn.addEventListener('click', () => copyCashAppTag(modalCopyTagBtn, copyBtnLabel));
+        }
+        if (guideCopyBtn) {
+            guideCopyBtn.addEventListener('click', () => copyCashAppTag(guideCopyBtn));
+        }
+
+        // Keyboard Shortcut: Esc to close modal/drawer
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeHandbook();
+                compareModal.classList.remove('active');
+                closeSupportModal();
+            }
+        });
+    </script>
+</body>
+</html>

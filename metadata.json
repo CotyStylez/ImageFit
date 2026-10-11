@@ -1,0 +1,9 @@
+{
+  "name": "ImageFit",
+  "description": "Pure, clutter-free standalone bulk image resizer & normalizer — fast, private, and 100% in-browser with zero cloud uploads.",
+  "prompt": "Clean, clutter-free standalone bulk image resizer and aspect-ratio normalizer with zero cloud uploads, fast in-browser canvas processing, and bulk zip export.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
